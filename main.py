@@ -8,8 +8,6 @@ import os
 from dotenv import load_dotenv 
 load_dotenv()
 
-
-
 #Radarr url and api key
 radarUrl = os.getenv("RADARRURL")
 radarApiKey = os.getenv("RADARRAPIKEY")
@@ -50,7 +48,8 @@ async def movie(ctx, *, arg):
         title = str(thing['original_title'])
         description = str(thing['overview'])
         poster = str("https://image.tmdb.org/t/p/w500" + thing['poster_path'])
-        mov_id = str("https://www.themoviedb.org/movie/" + str(thing['id']))
+        movid = thing['id']
+        movurl = str("https://www.themoviedb.org/movie/" + str(movid))
 
         addButton = Button(label="Add", style=ButtonStyle.green,  custom_id='add')
         nextButton = Button(label="Next", style=ButtonStyle.red, custom_id='next')
@@ -60,7 +59,7 @@ async def movie(ctx, *, arg):
 
         embed=discord.Embed(
             title = title, 
-            url = mov_id, 
+            url = movurl, 
             description = description, 
             color = color).set_image(url = poster)
         embeded = await ctx.message.channel.send(embed=embed, components = [actionRow])
@@ -70,18 +69,19 @@ async def movie(ctx, *, arg):
         )
 
         if interaction.custom_id == "add":
-            movie = radarr.get_movie(tmdb_id=thing['id'])
             try:
+                movie = radarr.get_movie(tmdb_id=movid)
                 movie.add("/movies", "HD-1080p", "English")
                 await embeded.delete()
                 await message.delete()
                 await ctx.message.channel.send(embed=embed)
-                await ctx.message.channel.send(title + ' had been added to Plex.')
+                await ctx.message.channel.send(title + ' had been added to Radarr and will be searched for.')
             except arrapi.exceptions.Exists:
                 await embeded.delete()
                 await message.delete()
                 await ctx.message.channel.send(embed=embed)
-                await ctx.message.channel.send('`That movie already exists!`')
+                await ctx.message.channel.send('That movie already exists!')
+                
             break
         else:
             await embeded.delete()
@@ -92,12 +92,17 @@ async def movie(ctx, *, arg):
             break
     return
 
+
+#!tv command
 @bot.command()
 async def tv(ctx, *, arg):
-    user_message =  str(arg) 
+    #Set user_message equal input
+    try:
+        user_message =  str(arg)
+    except discord.ext.commands.errors.MissingRequiredArgument:
+        await ctx.message.channel.send('Please add an argument')
 
-    channel = str(ctx.message.channel.name)
-    response = requests.get("https://api.themoviedb.org/3/search/tv?api_key=" + tmdbapi + "&language=en-US&query=" + user_message)
+    response = requests.get("https://imdb-api.com/en/API/Search/" + os.getenv("IMDBAPI") + "/" + user_message)
     data = response.json()
     
     list = data['results']
@@ -106,10 +111,10 @@ async def tv(ctx, *, arg):
     listcount = 0
     for thing in list:
         listcount += 1
-        title = str(thing['original_name'])
-        description = str(thing['overview'])
-        poster = str("https://image.tmdb.org/t/p/w500" + thing['poster_path'])
-        mov_id = str("https://www.themoviedb.org/tv/" + str(thing['id']))
+        title = str(thing['title'])
+        description = str(thing['description'])
+        poster = thing['image']
+        showurl = str("https://www.imdb.com/title/" + str(thing['id']))
 
         addButton = Button(label="Add", style=ButtonStyle.green,  custom_id='add')
         nextButton = Button(label="Next", style=ButtonStyle.red, custom_id='next')
@@ -119,7 +124,7 @@ async def tv(ctx, *, arg):
 
         embed=discord.Embed(
             title = title, 
-            url = mov_id, 
+            url = showurl, 
             description = description, 
             color = color).set_image(url = poster)
         embeded = await ctx.message.channel.send(embed=embed, components = [actionRow])
@@ -129,9 +134,9 @@ async def tv(ctx, *, arg):
         )
 
         if interaction.custom_id == "add":
-            search = sonarr.search_series(title)
             try:
-                search.add_series("/tv", "HD-1080p", "English")
+                search = sonarr.search_series(title)
+                search[0].add("/tv", "HD-1080p", "English", search = True)
                 await embeded.delete()
                 await message.delete()
                 await ctx.message.channel.send(embed=embed)
@@ -140,7 +145,7 @@ async def tv(ctx, *, arg):
                 await embeded.delete()
                 await message.delete()
                 await ctx.message.channel.send(embed=embed)
-                await ctx.message.channel.send('`That movie already exists!`')
+                await ctx.message.channel.send('That show already exists!')
             break
         else:
             await embeded.delete()
@@ -150,7 +155,6 @@ async def tv(ctx, *, arg):
             await ctx.message.channel.send('`End of query`')
             break
     return
-
 
 
 
