@@ -1,9 +1,8 @@
-from discord.ext.commands import Bot
+from discord.ext import commands
 import discord
 import qbittorrentapi
 import arrapi
 import requests
-from discord_components import DiscordComponents, Button, ComponentsBot, ButtonStyle, ActionRow
 import random
 import os
 from dotenv import load_dotenv 
@@ -44,7 +43,7 @@ TOKEN = os.getenv("TOKEN")
 
 tmdbapi = os.getenv("TMDBAPI")
 
-bot = ComponentsBot(command_prefix = "!")
+bot = commands.Bot(command_prefix='!')
 
 #Function to add movie to plex
 @bot.command()
@@ -71,9 +70,9 @@ async def movie(ctx, *, arg):
         movid = thing['id']
         movurl = str("https://www.themoviedb.org/movie/" + str(movid))
 
-        addButton = Button(label="Add", style=ButtonStyle.green,  custom_id='add')
-        nextButton = Button(label="Next", style=ButtonStyle.red, custom_id='next')
-        actionRow = ActionRow(addButton, nextButton)
+        addButton = discord.Button(label="Add", style=discord.ButtonStyle.green,  custom_id='add')
+        nextButton = discord.Button(Button(label="Next", style=discord.ButtonStyle.red, custom_id='next'))
+        actionRow = discord.ActionRow(addButton, nextButton)
 
         color = discord.Color.from_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
 
@@ -136,9 +135,9 @@ async def tv(ctx, *, arg):
         poster = thing['image']
         showurl = str("https://www.imdb.com/title/" + str(thing['id']))
 
-        addButton = Button(label="Add", style=ButtonStyle.green,  custom_id='add')
-        nextButton = Button(label="Next", style=ButtonStyle.red, custom_id='next')
-        actionRow = ActionRow(addButton, nextButton)
+        addButton = discord.Button(label="Add", style=discord.ButtonStyle.green,  custom_id='add')
+        nextButton = discord.Button(label="Next", style=discord.ButtonStyle.red, custom_id='next')
+        actionRow = discord.ActionRow(addButton, nextButton)
 
         color = discord.Color.from_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
 
