@@ -7,9 +7,10 @@ import random
 import os
 from dotenv import load_dotenv 
 import asyncio
+import threading
+import time
 load_dotenv()
 
-from tqdm import tqdm
 #QBT
 qbt_client = qbittorrentapi.Client(
     host='192.168.1.134',
@@ -61,7 +62,6 @@ async def movie(ctx, *, arg):
     message = await ctx.message.channel.send('Search Query:')
     listcount = 0
 
-    #
     for thing in list:
         listcount += 1
         title = str(thing['original_title'])
@@ -100,7 +100,6 @@ async def movie(ctx, *, arg):
                 await message.delete()
                 await ctx.message.channel.send(embed=embed)
                 await ctx.message.channel.send('That movie already exists!')
-                
             break
         else:
             await embeded.delete()
@@ -183,32 +182,42 @@ async def test(ctx):
 
 @bot.event
 async def on_ready():
+    z = await qBit()
+    z.start()
+
+async def qBit():
     channel = bot.get_channel(1012585941031993376)
     embed=discord.Embed(title = 'Downloads')
-    message = await channel.send(embed=embed)
+    downloads = await channel.send(embed=embed)
+    embed2=discord.Embed(title = 'Queue')
+    queue = await channel.send(embed=embed2)
     while True:
         channel = bot.get_channel(1012585941031993376)
         info = qbt_client.torrents_info(filter='active')
-        # print(info[0])
+        
         if info:
             data = listToString(info)
         else:
             data = "Nothing is currently downloading"
-        # message = await channel.send(data)
-       
-        # list=[]
-        # for i in range(len(info)):
-        #     list.append(info[i].name)
-        # print(list)
         embed=discord.Embed(
             title = 'Downloads', 
             url = '', 
             description = data, 
         )
-        await message.edit(embed=embed)
+        await downloads.edit(embed=embed)
+        info2 = qbt_client.torrents_info(filter='downloading', limit=20)
+        if info2:
+            data = listToString(info2)
+        else:
+            data = "Nothing is currently downloading"
+        embed2=discord.Embed(
+            title = 'Queue', 
+            url = '', 
+            description = data, 
+        )
+        await queue.edit(embed=embed2)
         await asyncio.sleep(10)
-
-
+        
 def listToString(list):
     stringlist = []
     for thing in list:
@@ -222,29 +231,7 @@ def listToString(list):
     s = ''.join(stringlist)
     return s
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
-    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
-
 def progress_bar(progress):
-    test = 25 - int(progress/4)
     bar = '█' * int(progress/4) + '_' * (25 - int(progress/4))
     return (f"\r|{bar}| {progress:2f}%")
 
