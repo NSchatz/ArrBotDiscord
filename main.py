@@ -54,10 +54,49 @@ async def movie(ctx, *, arg):
     user_message =  str(arg) 
 
     async def addButton_callback(self):
-        print(description)
+        await self.response.send_message(self.data)
+        # search = sonarr.search_series(title)
+        # search[0].add("/movies", "HD-1080p", "English", search = True)
+        
+        
  
-    async def nextButton_callback(self, interaction: discord.Interaction):
+    async def nextButton_callback(self):
         print('abc')
+        
+        await self.response.send_message("!!")
+        
+
+    async def embeddedMessage(thing):
+        view = discord.ui.View()
+        title = str(thing['original_title'])
+        description = str(thing['overview'])
+        poster = str("https://image.tmdb.org/t/p/w500" + thing['poster_path'])
+        movid = thing['id']
+        movurl = str("https://www.themoviedb.org/movie/" + str(movid))
+        buttons = []
+        addButton = discord.ui.Button(label="Add", style= discord.ButtonStyle.green)
+        buttons.append(addButton)
+        nextButton = discord.ui.Button(style=discord.ButtonStyle.red, label="Next", custom_id='next')
+        buttons.append(nextButton)
+        color = discord.Color.from_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
+        embed=discord.Embed(
+            title = title, 
+            url = movurl, 
+            description = description, 
+            color = color).set_image(url = poster)
+        addButton.callback = addButton_callback
+        nextButton.callback = nextButton_callback
+        view.add_item(item=addButton)
+        view.add_item(item=nextButton)
+        
+        embeded = await ctx.message.channel.send(embed=embed, view = view)
+        
+        
+        view.wait()
+        # test = await view.interaction_check(addButton)
+        # print(test)
+        
+        return
 
 
     #TMDB api
@@ -71,35 +110,8 @@ async def movie(ctx, *, arg):
     listcount = 0
 
     for thing in list:
-        view = discord.ui.View()
         listcount += 1
-        title = str(thing['original_title'])
-        description = str(thing['overview'])
-        poster = str("https://image.tmdb.org/t/p/w500" + thing['poster_path'])
-        movid = thing['id']
-        movurl = str("https://www.themoviedb.org/movie/" + str(movid))
-        buttons = []
-        addButton = discord.ui.Button(label="Add", style= discord.ButtonStyle.green)
-        buttons.append(addButton)
-        nextButton = discord.ui.Button(style=discord.ButtonStyle.red, label="Next", custom_id='next')
-        buttons.append(nextButton)
-        # actionRow = ActionRow(buttons)
-        row = discord.ui.View()
-        row.add_item(addButton)
-        row.add_item(nextButton)
-        color = discord.Color.from_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
-        embed=discord.Embed(
-            title = title, 
-            url = movurl, 
-            description = description, 
-            color = color).set_image(url = poster)
-        addButton.callback = addButton_callback
-        nextButton.callback = nextButton_callback
-        view.add_item(item=addButton)
-        view.add_item(item=nextButton)
-
-        embeded = await ctx.message.channel.send(embed=embed, view = view)
-
+        await embeddedMessage(thing)
         if listcount == 5:
             await message.delete()
             await ctx.message.channel.send('`End of query`')
@@ -216,7 +228,7 @@ async def qBit():
         )
         await queue.edit(embed=embed2)
         await asyncio.sleep(10)
-        
+
 def listToString(list):
     stringlist = []
     for thing in list:
