@@ -1,4 +1,5 @@
 from discord.ext import commands
+from discord.components import ActionRow
 import discord
 import qbittorrentapi
 import arrapi
@@ -39,18 +40,25 @@ sonarrApiKey = os.getenv("SONARRAPIKEY")
 sonarr = arrapi.SonarrAPI(sonarrUrl, sonarrApiKey)
 
 #Initialize discord bot token to be used with
-client = discord.Client()
+client = discord.Client(intents = discord.Intents.all())
 TOKEN = os.getenv("TOKEN")
 
 tmdbapi = os.getenv("TMDBAPI")
 
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='!', intents = discord.Intents.all())
 
 #Function to add movie to plex
 @bot.command()
 async def movie(ctx, *, arg):
     #Movie to search
     user_message =  str(arg) 
+
+    async def addButton_callback(self):
+        print(description)
+ 
+    async def nextButton_callback(self, interaction: discord.Interaction):
+        print('abc')
+
 
     #TMDB api
     response = requests.get("https://api.themoviedb.org/3/search/movie?api_key=" + tmdbapi + "&language=en-US&query=" + user_message)
@@ -63,52 +71,41 @@ async def movie(ctx, *, arg):
     listcount = 0
 
     for thing in list:
+        view = discord.ui.View()
         listcount += 1
         title = str(thing['original_title'])
         description = str(thing['overview'])
         poster = str("https://image.tmdb.org/t/p/w500" + thing['poster_path'])
         movid = thing['id']
         movurl = str("https://www.themoviedb.org/movie/" + str(movid))
-
-        addButton = discord.Button(label="Add", style=discord.ButtonStyle.green,  custom_id='add')
-        nextButton = discord.Button(Button(label="Next", style=discord.ButtonStyle.red, custom_id='next'))
-        actionRow = discord.ActionRow(addButton, nextButton)
-
+        buttons = []
+        addButton = discord.ui.Button(label="Add", style= discord.ButtonStyle.green)
+        buttons.append(addButton)
+        nextButton = discord.ui.Button(style=discord.ButtonStyle.red, label="Next", custom_id='next')
+        buttons.append(nextButton)
+        # actionRow = ActionRow(buttons)
+        row = discord.ui.View()
+        row.add_item(addButton)
+        row.add_item(nextButton)
         color = discord.Color.from_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
-
         embed=discord.Embed(
             title = title, 
             url = movurl, 
             description = description, 
             color = color).set_image(url = poster)
-        embeded = await ctx.message.channel.send(embed=embed, components = [actionRow])
+        addButton.callback = addButton_callback
+        nextButton.callback = nextButton_callback
+        view.add_item(item=addButton)
+        view.add_item(item=nextButton)
 
-        interaction = await bot.wait_for(
-            "button_click", check = lambda i: i.custom_id in ["add", "next"]
-        )
+        embeded = await ctx.message.channel.send(embed=embed, view = view)
 
-        if interaction.custom_id == "add":
-            try:
-                movie = radarr.get_movie(tmdb_id=movid)
-                movie.add("/movies", "HD-1080p", "English")
-                await embeded.delete()
-                await message.delete()
-                await ctx.message.channel.send(embed=embed)
-                await ctx.message.channel.send(title + ' had been added to Radarr and will be searched for.')
-            except arrapi.exceptions.Exists:
-                await embeded.delete()
-                await message.delete()
-                await ctx.message.channel.send(embed=embed)
-                await ctx.message.channel.send('That movie already exists!')
-            break
-        else:
-            await embeded.delete()
-        
         if listcount == 5:
             await message.delete()
             await ctx.message.channel.send('`End of query`')
             break
     return
+
 
 
 #!tv command
@@ -133,10 +130,12 @@ async def tv(ctx, *, arg):
         description = str(thing['description'])
         poster = thing['image']
         showurl = str("https://www.imdb.com/title/" + str(thing['id']))
-
+        buttons = []
         addButton = discord.Button(label="Add", style=discord.ButtonStyle.green,  custom_id='add')
+        buttons.append(addButton)
         nextButton = discord.Button(label="Next", style=discord.ButtonStyle.red, custom_id='next')
-        actionRow = discord.ActionRow(addButton, nextButton)
+        buttons.append(nextButton)
+        actionRow = ActionRow(buttons)
 
         color = discord.Color.from_rgb(random.randint(0,255), random.randint(0,255), random.randint(0,255))
 
